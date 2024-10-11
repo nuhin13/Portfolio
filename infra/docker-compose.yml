@@ -1,0 +1,64 @@
+version: '3'
+services:
+  # Frontend (Nginx) service
+  frontend:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ../web
+    image: nginx:alpine
+    container_name: portfolio-frontend
+    ports:
+      - "27000:80" # Exposing Nginx on port 8080
+    volumes:
+      - ../web:/usr/share/nginx/html # Mounting the frontend folder to Nginx's default web root
+    depends_on:
+      - backend # Ensure backend is up before starting frontend
+    restart: always
+    networks:
+      - portfolio-local-network
+
+  # Backend (Node.js) service
+  backend:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ../backend # Assuming backend Dockerfile is located in ./backend folder
+    container_name: portfolio-backend
+    ports:
+      - "27001:3000" # Exposing the backend on port 3000
+    volumes:
+      - ../backend:/app  # Mount backend folder to /app
+      - /app/node_modules  # Prevent overwriting node_modules folder
+#    environment:
+#      - MONGO_URI=mongodb://mongodb:27017/portfolio # MongoDB connection URI
+    depends_on:
+      - mongodb # Ensure MongoDB is up before backend starts
+    restart: always
+    networks:
+      - portfolio-local-network
+
+  # MongoDB service
+  mongodb:
+    image: mongo:latest
+    container_name: portfolio-mongodb
+    ports:
+      - "27002:27017" # Exposing MongoDB on port 27017
+    volumes:
+      - mongo-data:/data/db # Persisting MongoDB data
+    restart: always
+    networks:
+      - portfolio-local-network
+
+  flutter-web:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ../flutter_portfolio_web # Assuming backend Dockerfile is located in ./backend folder
+    ports:
+      - "27007:87"
+
+# Volumes for data persistence
+volumes:
+  mongo-data:
+
+networks:
+  portfolio-local-network:
+    driver: bridge
